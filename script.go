@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"reflect"
 	"strings"
 
 	"golang.org/x/net/context"
@@ -93,7 +94,11 @@ func stringInSlice(a string, list []string) bool {
 	return false
 }
 
-// Delete email with a certain id
+func getField(v []*gmail.MessagePartHeader, field string) {
+	r := reflect.ValueOf(v)
+	f := reflect.Indirect(r).FieldByName(field)
+	fmt.Println("f", f)
+}
 
 // Main function
 func main() {
@@ -118,8 +123,9 @@ func main() {
 
 			// Get the headers of the message
 			mes_server, err := server.Users.Messages.List(user).Do()
+
 			for _, m := range mes_server.Messages {
-				fmt.Println("For loop is running")
+				fmt.Println("m", m)
 				msg, err := server.Users.Messages.Get("me", m.Id).Do()
 				if err != nil {
 					log.Fatalf("Unable to retrieve message %v: %v", m.Id, err)
@@ -127,22 +133,17 @@ func main() {
 				label_id := msg.LabelIds
 
 				// Get only unread messages in inbox and primary category
-				if stringInSlice("UNREAD", label_id) == true && stringInSlice("CATEGORY_UPDATES", label_id) {
-					for _, h := range msg.Payload.Headers {
-						if h.Name == "Subject" {
-							subject := h.Value
-							words := strings.Split(subject, " ")
-							for _, word := range words {
-								if stringInSlice(word, subject_keywords) == true {
-									fmt.Println("Message id", msg.Id)
-									email_to_delete = append(email_to_delete, msg.Id)
-								}
-							}
+				if stringInSlice("UNREAD", label_id) == true && stringInSlice("CATEGORY_UPDATES", label_id){
+					subject := msg.Payload.Headers[19].Value
+					words := strings.Split(subject, " ")
+					for _, word := range words{
+						if stringInSlice(word, subject_keywords) == true{
+							fmt.Println("Message id", msg.Id)
+							email_to_delete = append(email_to_delete, msg.Id)
 						}
 					}
 				}
 			}
-
 			fmt.Println(email_to_delete)
 		}
 	}
