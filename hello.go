@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
@@ -82,8 +83,22 @@ func getClient(config *oauth2.Config) *http.Client {
 
 }
 
+// Check if a string exist within an array
+func stringInSlice(a string, list []string) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
+	}
+	return false
+}
+
+// Delete email with a certain id
+
 // Main function
 func main() {
+	subject_keywords := []string{"Lyft", "Uber"}
+	email_to_delete := []string{}
 	cred_file, err := ioutil.ReadFile("credentials.json")
 	if err != nil {
 		log.Fatalf("Unable to read file: %v", err)
@@ -104,57 +119,31 @@ func main() {
 			// Get the headers of the message
 			mes_server, err := server.Users.Messages.List(user).Do()
 			for _, m := range mes_server.Messages {
+				fmt.Println("For loop is running")
 				msg, err := server.Users.Messages.Get("me", m.Id).Do()
 				if err != nil {
 					log.Fatalf("Unable to retrieve message %v: %v", m.Id, err)
 				}
-				for _, h := range msg.Payload.Headers {
-					if h.Name == "Subject" {
-						println(h.Value)
-					}
-					// if h.Name == "Date" {
-					// 	date = h.Value
-					// 	break
-					// }
-				}
-				// fmt.Println(msg.Payload.Headers)
-				// fmt.Println(msg.Payload.Body)
-				// t := reflect.TypeOf(msg)
-				// println(t)
-				// println(t.NumField)
-				// for i := 0; i < t.NumField(); i++ {
-				// 	fmt.Printf("%+v\n", t.Field(i))
-				// }
-				// fmt.Println("Payload", (&msg.Payload))
-				// fmt.Println("No pointer", msg.Payload)
-				// json_msg, _ := json.Marshal(msg)
-				// msg_content := string(json_msg)
-				// fmt.Println(msg_content)
+				label_id := msg.LabelIds
 
+				// Get only unread messages in inbox and primary category
+				if stringInSlice("UNREAD", label_id) == true && stringInSlice("CATEGORY_UPDATES", label_id) {
+					for _, h := range msg.Payload.Headers {
+						if h.Name == "Subject" {
+							subject := h.Value
+							words := strings.Split(subject, " ")
+							for _, word := range words {
+								if stringInSlice(word, subject_keywords) == true {
+									fmt.Println("Message id", msg.Id)
+									email_to_delete = append(email_to_delete, msg.Id)
+								}
+							}
+						}
+					}
+				}
 			}
 
-			// r, err := srv.Users.Labels.List(user).Do()
-			// if err != nil {
-			// 	log.Fatalf("Unable to retrieve labels: %v", err)
-			// }
-
-			// Get labels of email
-			// for _, l := range r.Labels {
-			// 	fmt.Printf("- %s\n", l.Name)
-			// }
-
-			// fmt.Println("server", r)
-			// r := srv.Users.Labels.List(user)
-			// fmt.Println("type of r", reflect.TypeOf(r))
-
-			// if err != nil{
-			// 	panic("Unable to get messages")
-			// }
-			// for _, m in range mes.{
-			// 	fmt.Println(m)
-			// }
-			// fmt.Println(*mes)
-			// fmt.Println("type of mes", reflect.TypeOf(mes))
+			fmt.Println(email_to_delete)
 		}
 	}
 }
