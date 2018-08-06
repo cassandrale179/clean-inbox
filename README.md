@@ -1,2 +1,2 @@
-# delete-bugs
-Google App Scripts to delete emails from command line 
+# clean-inbox
+Script to delete labelled email. Just a repo practice for Golang. 
