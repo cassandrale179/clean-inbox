@@ -15,7 +15,7 @@ import (
 	"google.golang.org/api/gmail/v1"
 )
 
-// This function is not needed now
+// Get credential from json file
 func getCreds(cred_file []uint8) {
 
 	// Convert credentials to json
@@ -95,20 +95,66 @@ func main() {
 
 			// Get client and create a gmail server
 			client := getClient(config)
-			srv, err := gmail.New(client)
+			server, err := gmail.New(client)
 			if err != nil {
 				log.Fatalf("Unable to retrieve Gmail client: %v", err)
 			}
 			user := "me"
-			r, err := srv.Users.Labels.List(user).Do()
-			if err != nil {
-				log.Fatalf("Unable to retrieve labels: %v", err)
+
+			// Get the headers of the message
+			mes_server, err := server.Users.Messages.List(user).Do()
+			for _, m := range mes_server.Messages {
+				msg, err := server.Users.Messages.Get("me", m.Id).Do()
+				if err != nil {
+					log.Fatalf("Unable to retrieve message %v: %v", m.Id, err)
+				}
+				for _, h := range msg.Payload.Headers {
+					if h.Name == "Subject" {
+						println(h.Value)
+					}
+					// if h.Name == "Date" {
+					// 	date = h.Value
+					// 	break
+					// }
+				}
+				// fmt.Println(msg.Payload.Headers)
+				// fmt.Println(msg.Payload.Body)
+				// t := reflect.TypeOf(msg)
+				// println(t)
+				// println(t.NumField)
+				// for i := 0; i < t.NumField(); i++ {
+				// 	fmt.Printf("%+v\n", t.Field(i))
+				// }
+				// fmt.Println("Payload", (&msg.Payload))
+				// fmt.Println("No pointer", msg.Payload)
+				// json_msg, _ := json.Marshal(msg)
+				// msg_content := string(json_msg)
+				// fmt.Println(msg_content)
+
 			}
 
+			// r, err := srv.Users.Labels.List(user).Do()
+			// if err != nil {
+			// 	log.Fatalf("Unable to retrieve labels: %v", err)
+			// }
+
 			// Get labels of email
-			for _, l := range r.Labels {
-				fmt.Printf("- %s\n", l.Name)
-			}
+			// for _, l := range r.Labels {
+			// 	fmt.Printf("- %s\n", l.Name)
+			// }
+
+			// fmt.Println("server", r)
+			// r := srv.Users.Labels.List(user)
+			// fmt.Println("type of r", reflect.TypeOf(r))
+
+			// if err != nil{
+			// 	panic("Unable to get messages")
+			// }
+			// for _, m in range mes.{
+			// 	fmt.Println(m)
+			// }
+			// fmt.Println(*mes)
+			// fmt.Println("type of mes", reflect.TypeOf(mes))
 		}
 	}
 }
