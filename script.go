@@ -123,40 +123,22 @@ func main() {
 				}
 				xulu.Use(subjectKeywords, msg)
 				fmt.Println(msg.Id)
-				
-				// Resolve this error 
+
 				// Get only unread messages in inbox and primary category
-				if stringInSlice("UNREAD", label_id) == true && stringInSlice("CATEGORY_UPDATES", label_id){
+				if stringInSlice("UNREAD", msg.LabelIds) == true && stringInSlice("CATEGORY_UPDATES", msg.LabelIds) {
 					subject := msg.Payload.Headers[19].Value
 					words := strings.Split(subject, " ")
-					for _, word := range words{
-						if stringInSlice(word, subject_keywords) == true{
+					for _, word := range words {
+						if stringInSlice(word, subjectKeywords) == true {
 							fmt.Println("Message id", msg.Id)
-							// delete_email(msg.Id)
-						}
-					}
-				}
-
-				//Get only unread messages in inbox and primary category
-				if stringInSlice("UNREAD", msg.LabelIds) == true && stringInSlice("CATEGORY_UPDATES", msg.LabelIds) {
-					for _, h := range msg.Payload.Headers {
-						if h.Name == "Subject" {
-							subject := h.Value
-							words := strings.Split(subject, " ")
-							for _, word := range words {
-								if stringInSlice(word, subjectKeywords) == true {
-									fmt.Println("Message id", msg.Id)
-									if err := server.Users.Messages.Delete(user, msg.Id).Do(); err != nil {
-										log.Fatalf("unable to delete message %v: %v", msg.Id, err)
-									}
-									fmt.Println("Successfully delete message")
-								}
+							if err := server.Users.Messages.Delete(user, msg.Id).Do(); err != nil {
+								log.Fatalf("unable to delete message %v: %v", msg.Id, err)
 							}
+							fmt.Println("Successfully delete message")
 						}
 					}
 				}
 			}
-
 		}
 	}
 }
