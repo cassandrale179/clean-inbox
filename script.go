@@ -123,6 +123,19 @@ func main() {
 				}
 				xulu.Use(subjectKeywords, msg)
 				fmt.Println(msg.Id)
+				
+				// Resolve this error 
+				// Get only unread messages in inbox and primary category
+				if stringInSlice("UNREAD", label_id) == true && stringInSlice("CATEGORY_UPDATES", label_id){
+					subject := msg.Payload.Headers[19].Value
+					words := strings.Split(subject, " ")
+					for _, word := range words{
+						if stringInSlice(word, subject_keywords) == true{
+							fmt.Println("Message id", msg.Id)
+							// delete_email(msg.Id)
+						}
+					}
+				}
 
 				//Get only unread messages in inbox and primary category
 				if stringInSlice("UNREAD", msg.LabelIds) == true && stringInSlice("CATEGORY_UPDATES", msg.LabelIds) {
