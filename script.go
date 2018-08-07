@@ -10,6 +10,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/lunux2008/xulu"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -17,10 +18,10 @@ import (
 )
 
 // Get credential from json file
-func getCreds(cred_file []uint8) {
+func getCreds(credFile []uint8) {
 
 	// Convert credentials to json
-	credentials := (string(cred_file))
+	credentials := (string(credFile))
 	var data map[string]interface{}
 	json.Unmarshal([]byte(credentials), &data)
 
@@ -29,8 +30,8 @@ func getCreds(cred_file []uint8) {
 	if !ok {
 		panic("inner map is not a map!")
 	} else {
-		client_id := innermap["client_id"]
-		fmt.Print(client_id)
+		clientID := innermap["clientID"]
+		fmt.Print(clientID)
 	}
 }
 
@@ -93,17 +94,14 @@ func stringInSlice(a string, list []string) bool {
 	return false
 }
 
-// Delete email with a certain id
-
 // Main function
 func main() {
-	subject_keywords := []string{"Lyft", "Uber"}
-	email_to_delete := []string{}
-	cred_file, err := ioutil.ReadFile("credentials.json")
+	subjectKeywords := []string{"Lyft", "Uber"}
+	credFile, err := ioutil.ReadFile("credentials.json")
 	if err != nil {
 		log.Fatalf("Unable to read file: %v", err)
 	} else {
-		config, err := google.ConfigFromJSON(cred_file, gmail.GmailReadonlyScope)
+		config, err := google.ConfigFromJSON(credFile, gmail.MailGoogleComScope)
 		if err != nil {
 			panic("Error getting config")
 		} else {
@@ -117,25 +115,28 @@ func main() {
 			user := "me"
 
 			// Get the headers of the message
-			mes_server, err := server.Users.Messages.List(user).Do()
-			for _, m := range mes_server.Messages {
-				fmt.Println("For loop is running")
+			messageServer, err := server.Users.Messages.List(user).Do()
+			for _, m := range messageServer.Messages {
 				msg, err := server.Users.Messages.Get("me", m.Id).Do()
 				if err != nil {
 					log.Fatalf("Unable to retrieve message %v: %v", m.Id, err)
 				}
-				label_id := msg.LabelIds
+				xulu.Use(subjectKeywords, msg)
+				fmt.Println(msg.Id)
 
-				// Get only unread messages in inbox and primary category
-				if stringInSlice("UNREAD", label_id) == true && stringInSlice("CATEGORY_UPDATES", label_id) {
+				//Get only unread messages in inbox and primary category
+				if stringInSlice("UNREAD", msg.LabelIds) == true && stringInSlice("CATEGORY_UPDATES", msg.LabelIds) {
 					for _, h := range msg.Payload.Headers {
 						if h.Name == "Subject" {
 							subject := h.Value
 							words := strings.Split(subject, " ")
 							for _, word := range words {
-								if stringInSlice(word, subject_keywords) == true {
+								if stringInSlice(word, subjectKeywords) == true {
 									fmt.Println("Message id", msg.Id)
-									email_to_delete = append(email_to_delete, msg.Id)
+									if err := server.Users.Messages.Delete(user, msg.Id).Do(); err != nil {
+										log.Fatalf("unable to delete message %v: %v", msg.Id, err)
+									}
+									fmt.Println("Successfully delete message")
 								}
 							}
 						}
@@ -143,7 +144,6 @@ func main() {
 				}
 			}
 
-			fmt.Println(email_to_delete)
 		}
 	}
 }
